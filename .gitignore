@@ -1,0 +1,11 @@
+.DS_Store
+js_libs/
+*log.txt*
+
+.env.php
+
+utils/
+
+db_ops/
+
+/admin/db_ops
