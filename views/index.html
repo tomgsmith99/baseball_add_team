@@ -1,0 +1,351 @@
+<html>
+
+<head>
+
+<title>Smith Family baseball: Add Team</title>
+
+<!-- CSS -->
+
+<link rel="stylesheet" href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css">
+
+<link rel="stylesheet" href="https://getbootstrap.com/docs/4.0/examples/starter-template/starter-template.css
+">
+
+<style>
+
+	div.ui_button {
+		display: none;
+	}
+
+</style>
+
+<!-- Javascript -->
+
+<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+
+<script src="https://getbootstrap.com/docs/4.0/assets/js/vendor/popper.min.js"></script>
+
+<script src="https://getbootstrap.com/docs/4.0/dist/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+
+const max_salary = 13000
+
+const season = 2021
+
+async function evaluate_team() {
+
+	const owner_id = $("#owner_id").val()
+
+	var team = []
+
+	var salary_total = 0
+
+	var positions = ["C", "1B", "2B", "3B", "SS", "OF1", "OF2", "OF3", "SP1", "SP2", "SP3", "RP"]
+
+	for (pos of positions) {
+		console.log(pos)
+		console.log("the id is: " + $("#" + pos).val())
+
+		player_id = $("#" + pos).val()
+
+		salary_total += await get_salary(player_id)
+
+		if (team.includes(player_id)) {
+			console.log("player " + player_id + " is already on this roster.")
+			return
+		}
+
+		team.push(player_id)
+	}
+
+	console.log("salary total: " + salary_total)
+
+	if (salary_total > max_salary) {
+		alert("the salary total is: " + salary_total)
+		return
+	}
+
+	for (player_id of team) {
+		let res = await add_player_to_owner(owner_id, player_id)
+	}
+
+	const team_name = $("#team_name").val()
+
+	const team_obj = {
+		bank: max_salary - salary_total,
+		salary: salary_total,
+		season: season,
+		team_name: $("#team_name").val()
+	}
+
+	var settings = {
+		"async": true,
+		"crossDomain": true,
+		"url": `{{{api_base}}}/api/owners/${owner_id}/team`,
+		"method": "POST",
+		"headers": {
+			"Content-Type": "application/json",
+			"cache-control": "no-cache",
+			"Authorization": "Bearer {{{API_KEY}}}"
+		},
+		"processData": false,
+		"data": JSON.stringify(team_obj)
+	}
+
+	$.ajax(settings).done(function (resp) {
+
+		console.log("the response from the server was: ")
+
+		console.dir(resp)
+
+		if (resp.status == "ok") {
+			alert("success!")
+			location.reload()
+		}
+	})
+}
+
+function add_player_to_owner(owner_id, player_id) {
+	return new Promise (function(resolve, reject) {
+		$.getJSON(`{{{api_base}}}/api/owners/${owner_id}/players/${player_id}`, function(data) {
+
+			console.dir(status)
+			return resolve(status)
+		})
+	})
+}
+
+function get_salary(player_id) {
+	return new Promise (function(resolve, reject) {
+		$.getJSON(`{{{api_base}}}/api/players/${player_id}/salary`, function(data) {
+			return resolve(data.salary)
+		})
+	})
+}
+
+function select_owner() {
+
+	const owner_id = $("#owner_id").val()
+
+	$.getJSON(`{{{api_base}}}/api/owners/${owner_id}/team_name`, function(data) {
+
+		console.dir(data)
+
+		const team_name = data.team_name
+
+		$("#players").show()
+		$("#submit_team").show()
+
+		$("#select_owner").hide()
+
+		$("#team_name").val(team_name)
+	})
+}
+
+</script>
+
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+      <a class="navbar-brand" href="#">Trivial Journey</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active" id="login_link" style="display: none">
+            <a class="nav-link" href="{{COGNITO_HOME}}/login?response_type=token&client_id={{CLIENT_ID}}&redirect_uri={{APP_URL}}/callback&scope=openid+profile+aws.cognito.signin.user.admin">sign in / register</a>
+          </li>
+
+          <li class="nav-item active" id="clear_button"><a class="nav-link" onclick="clear_local_storage()" href="#">Clear</a>
+          </li>
+
+          <li class="nav-item" id="logout_link" style="display: none" onclick="log_out()"><a class="nav-link" href="#">sign out</a>
+          </li>
+        </ul>
+
+      </div>
+    </nav>
+
+    <main role="main" class="container">
+
+      <div class="starter-template">
+
+		<div class="row">
+			<div class="col-sm" style = "text-align: left">
+
+				<select id="owner_id" name="owner_id" size=10>
+					{{#owners}}
+						<option value="{{owner_id}}">{{LNF}}</option>
+					{{/owners}}
+				</select>
+
+				<br>
+
+				<button id="select_owner" onclick="select_owner()">go</button>
+
+				<table id = "players" border = 0 style="display: none">
+
+				<tr>
+					<td>Team Name:</td>
+					<td>
+						<input type="text" id="team_name" size=25>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Catcher:</td>
+					<td>
+						<select id="C" size=3>
+							{{#catchers}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/catchers}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>First baseman:</td>
+					<td>
+						<select id="1B" name="1B" size=3>
+							{{#first_basemen}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/first_basemen}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Second baseman:</td>
+					<td>
+						<select id="2B" name="2B" size=3>
+							{{#second_basemen}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/second_basemen}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Third baseman:</td>
+					<td>
+						<select id="3B" name="3B" size=3>
+							{{#third_basemen}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/third_basemen}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Shortstop:</td>
+					<td>
+						<select id="SS" name="SS" size=3>
+							{{#shortstops}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/shortstops}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Outfield1:</td>
+					<td>
+						<select id="OF1" name="OF1" size=3>
+							{{#outfield}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/outfield}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Outfield2:</td>
+					<td>
+						<select id="OF2" name="OF2" size=3>
+							{{#outfield}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/outfield}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>Outfield3:</td>
+					<td>
+						<select id="OF3" name="OF3" size=3>
+							{{#outfield}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/outfield}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>SP1:</td>
+					<td>
+						<select id="SP1" name="SP1" size=3>
+							{{#SP}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/SP}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>SP2:</td>
+					<td>
+						<select id="SP2" name="SP2" size=3>
+							{{#SP}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/SP}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>SP3:</td>
+					<td>
+						<select id="SP3" name="SP3" size=3>
+							{{#SP}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/SP}}
+						</select>
+					</td>
+				</tr>
+
+				<tr>
+					<td>RP:</td>
+					<td>
+						<select id="RP" name="RP" size=3>
+							{{#RP}}
+								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+							{{/RP}}
+						</select>
+					</td>
+				</tr>
+
+			</table>
+
+			<button id="submit_team" onclick="evaluate_team()" style="display: none">go</button>
+
+			</div>
+
+			<div class="col-sm">
+
+			</div>
+
+		</div>
+
+	</main><!-- /.container -->
+
+</body>
+
+</html>
