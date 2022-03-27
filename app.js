@@ -1,6 +1,9 @@
 
+require('dotenv').config()
+
 const express = require('express')
-let mustacheExpress = require('mustache-express');
+
+let mustacheExpress = require('mustache-express')
 
 /*************************************************/
 
@@ -12,15 +15,13 @@ var con = dbconn.mysql_conn()
 
 const app = express()
 
-app.use(express.json());
+app.use(express.json())
 
-app.use(express.static('public'))
+// app.use(express.static('public'))
 
 app.engine('html', mustacheExpress());
 
 app.set('view engine', 'html');
-
-// app.set('views', `${__dirname}/views`);
 
 /*************************************************/
 
@@ -32,16 +33,18 @@ app.listen(port, () => {
 
 /*************************************************/
 
+app.get('/favicon.ico', (req, res) => {
+	res.sendStatus(200)
+})
+
 app.get('/', (req, res) => {
 
-	var obj = {
-		api_base: process.env.API_BASE,
-		API_KEY: process.env.API_KEY
+	let obj = {
+		max_salary: process.env.max_salary,
+		season: process.env.season
 	}
 
-	var query = `SELECT owner_id, LNF FROM owners WHERE family_status=1 ORDER BY LNF`
-
-	console.log(query)
+	let query = `SELECT id, LNF, most_recent_team_name FROM owner_valid ORDER BY LNF`
 
 	con.query(query, function (err, owners) {
 		if (err) {
@@ -52,9 +55,7 @@ app.get('/', (req, res) => {
 
 		obj.owners = owners
 
-		console.dir(owners)
-
-		const player_query = "SELECT pc.player_id, pc.salary, pc.team, p.lnf FROM players_current AS pc, players AS p WHERE pos='whichpos' AND pc.player_id = p.player_id ORDER BY p.lnf"
+		const player_query = `SELECT id AS player_id, salary, team, LNF AS lnf FROM player_pool_detail WHERE pos='whichpos' AND season = ${process.env.season} ORDER BY lnf`
 
 		query = player_query.replace("whichpos", "C")
 
@@ -152,6 +153,93 @@ app.get('/', (req, res) => {
 					})
 				})
 			})
+		})
+	})
+})
+
+app.get('/data', (req, res) => {
+
+	let query = `SELECT id, LNF, most_recent_team_name FROM owner_valid ORDER BY LNF`
+
+	con.query(query, function (err, owners) {
+		if (err) {
+			console.log(err)
+			res.json(err)
+			return
+		}
+
+		let owners_obj = {}
+
+		for (owner of owners) {
+			owners_obj[owner.id] = {
+				LNF: owner.LNF,
+				most_recent_team_name: owner.most_recent_team_name
+			}
+		}
+
+		query = `SELECT id, pos, salary, team FROM player_pool_detail ORDER BY LNF`
+
+		con.query(query, function (err, players) {
+			if (err) {
+				console.log(err)
+				res.json(err)
+				return
+			}
+
+			let players_obj = {}
+
+			for (player of players) {
+				players_obj[player.id] = {
+					team: player.team,
+					pos: player.pos,
+					salary: player.salary,
+					team: player.team
+				}
+			}
+
+			const obj = {
+				owners: owners_obj,
+				players: players_obj
+			}
+
+			res.json(obj)
+		})
+	})
+})
+
+app.post('/add_team', (req, res) => {
+
+	console.dir(req.body)
+
+	const { bank, owner_id, roster, salary, season, team_name } = req.body
+
+	const team_name_esc = con.escape(team_name)
+
+	let query = `INSERT INTO ownersXseasons SET owner_id = ${owner_id}, team_name = ${team_name_esc}, season = ${season}`
+
+	con.query(query, function (err, data) {
+		if (err) {
+			console.log(err)
+			res.json(err)
+			return
+		}
+
+		query = `INSERT INTO ownersXrosters (owner_id, player_id, season) VALUES `
+
+		for (player_id of roster) {
+			query += `(${owner_id}, ${player_id}, ${season}), `
+		}
+
+		query = query.substring(0, (query.length - 2))
+
+		con.query(query, function (err, data) {
+			if (err) {
+				console.log(err)
+				res.json(err)
+				return
+			}
+
+			res.json({status: "ok"})
 		})
 	})
 })

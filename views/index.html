@@ -2,49 +2,50 @@
 
 <head>
 
-<title>Smith Family baseball: Add Team</title>
+<title>Smith Family baseball: Add Team {{season}}</title>
 
 <!-- CSS -->
 
-<link rel="stylesheet" href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
-<link rel="stylesheet" href="https://getbootstrap.com/docs/4.0/examples/starter-template/starter-template.css
-">
-
-<style>
-
-	div.ui_button {
-		display: none;
-	}
-
-</style>
+<link rel="stylesheet" href="https://getbootstrap.com/docs/5.0/examples/starter-template/starter-template.css">
 
 <!-- Javascript -->
 
-<script
-  src="https://code.jquery.com/jquery-3.4.1.min.js"
-  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-  crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
 
-<script src="https://getbootstrap.com/docs/4.0/assets/js/vendor/popper.min.js"></script>
-
-<script src="https://getbootstrap.com/docs/4.0/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
 <script type="text/javascript">
 
-const max_salary = 13000
+const max_salary = {{max_salary}}
 
-const season = 2021
+const season = {{season}}
 
-async function evaluate_team() {
+window.onload = function() {
+
+	$.getJSON(`/data`, function(data) {
+
+		localStorage.setItem('owners', JSON.stringify(data.owners))
+
+		localStorage.setItem('players', JSON.stringify(data.players))
+
+	})
+}
+
+function evaluate_team() {
 
 	const owner_id = $("#owner_id").val()
 
-	var team = []
+	const players_raw = localStorage.getItem('players')
 
-	var salary_total = 0
+	const players = JSON.parse(players_raw)
 
-	var positions = ["C", "1B", "2B", "3B", "SS", "OF1", "OF2", "OF3", "SP1", "SP2", "SP3", "RP"]
+	let roster = []
+
+	let salary_total = 0
+
+	const positions = ["C", "1B", "2B", "3B", "SS", "OF1", "OF2", "OF3", "SP1", "SP2", "SP3", "RP"]
 
 	for (pos of positions) {
 		console.log(pos)
@@ -52,14 +53,14 @@ async function evaluate_team() {
 
 		player_id = $("#" + pos).val()
 
-		salary_total += await get_salary(player_id)
+		salary_total += players[player_id].salary
 
-		if (team.includes(player_id)) {
-			console.log("player " + player_id + " is already on this roster.")
+		if (roster.includes(player_id)) {
+			alert("player " + player_id + " is already on this roster.")
 			return
 		}
 
-		team.push(player_id)
+		roster.push(player_id)
 	}
 
 	console.log("salary total: " + salary_total)
@@ -69,28 +70,23 @@ async function evaluate_team() {
 		return
 	}
 
-	for (player_id of team) {
-		let res = await add_player_to_owner(owner_id, player_id)
-	}
-
-	const team_name = $("#team_name").val()
-
 	const team_obj = {
 		bank: max_salary - salary_total,
+		owner_id: owner_id,
+		roster: roster,
 		salary: salary_total,
 		season: season,
 		team_name: $("#team_name").val()
 	}
 
-	var settings = {
+	const settings = {
 		"async": true,
 		"crossDomain": true,
-		"url": `{{{api_base}}}/api/owners/${owner_id}/team`,
+		"url": `/add_team`,
 		"method": "POST",
 		"headers": {
 			"Content-Type": "application/json",
 			"cache-control": "no-cache",
-			"Authorization": "Bearer {{{API_KEY}}}"
 		},
 		"processData": false,
 		"data": JSON.stringify(team_obj)
@@ -104,46 +100,29 @@ async function evaluate_team() {
 
 		if (resp.status == "ok") {
 			alert("success!")
-			location.reload()
+			// location.reload()
 		}
-	})
-}
-
-function add_player_to_owner(owner_id, player_id) {
-	return new Promise (function(resolve, reject) {
-		$.getJSON(`{{{api_base}}}/api/owners/${owner_id}/players/${player_id}`, function(data) {
-
-			console.dir(status)
-			return resolve(status)
-		})
-	})
-}
-
-function get_salary(player_id) {
-	return new Promise (function(resolve, reject) {
-		$.getJSON(`{{{api_base}}}/api/players/${player_id}/salary`, function(data) {
-			return resolve(data.salary)
-		})
 	})
 }
 
 function select_owner() {
 
-	const owner_id = $("#owner_id").val()
+	const id = $("#owner_id").val()
 
-	$.getJSON(`{{{api_base}}}/api/owners/${owner_id}/team_name`, function(data) {
+	const owners_raw = localStorage.getItem("owners")
 
-		console.dir(data)
+	const owners = JSON.parse(owners_raw)
 
-		const team_name = data.team_name
+	const owner = owners[id]
 
-		$("#players").show()
-		$("#submit_team").show()
+	$("#owners_dropdown_div").hide()
 
-		$("#select_owner").hide()
+	$("#input_team_div").show()
 
-		$("#team_name").val(team_name)
-	})
+	$("#owner_name").html(owner.LNF)
+
+	$("#team_name").val(owner.most_recent_team_name)
+
 }
 
 </script>
@@ -152,199 +131,201 @@ function select_owner() {
 
 <body>
 
-    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-      <a class="navbar-brand" href="#">Trivial Journey</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Add a team {{season}}</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
+</nav>
 
-      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item active" id="login_link" style="display: none">
-            <a class="nav-link" href="{{COGNITO_HOME}}/login?response_type=token&client_id={{CLIENT_ID}}&redirect_uri={{APP_URL}}/callback&scope=openid+profile+aws.cognito.signin.user.admin">sign in / register</a>
-          </li>
+<main role="main" class="container">
 
-          <li class="nav-item active" id="clear_button"><a class="nav-link" onclick="clear_local_storage()" href="#">Clear</a>
-          </li>
+  <div class="starter-template">
 
-          <li class="nav-item" id="logout_link" style="display: none" onclick="log_out()"><a class="nav-link" href="#">sign out</a>
-          </li>
-        </ul>
+		<div class="row" style = "margin-top: 25px;">
 
-      </div>
-    </nav>
+			<div class="col-md-6" style = "text-align: left;">
 
-    <main role="main" class="container">
+				<div id = "owners_dropdown_div">
 
-      <div class="starter-template">
+					<h3>Select an owner</h3>
 
-		<div class="row">
-			<div class="col-sm" style = "text-align: left">
+					<select id="owner_id" class="form-select" name="owner_id">
+						{{#owners}}
+							<option value="{{id}}">{{LNF}}</option>
+						{{/owners}}
+					</select>
 
-				<select id="owner_id" name="owner_id" size=10>
-					{{#owners}}
-						<option value="{{owner_id}}">{{LNF}}</option>
-					{{/owners}}
-				</select>
+					<br>
 
-				<br>
+					<button id="select_owner" onclick="select_owner()" style="margin-top: 25px;">go</button>
 
-				<button id="select_owner" onclick="select_owner()">go</button>
+				</div>
 
-				<table id = "players" border = 0 style="display: none">
+				<div id = "input_team_div" style = "display: none;">
 
-				<tr>
-					<td>Team Name:</td>
-					<td>
-						<input type="text" id="team_name" size=25>
-					</td>
-				</tr>
+					<div id = "owner_name_div">
+						<p>Selected owner: <span id = "owner_name"></span></p>
+					</div>
 
-				<tr>
-					<td>Catcher:</td>
-					<td>
-						<select id="C" size=3>
-							{{#catchers}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/catchers}}
-						</select>
-					</td>
-				</tr>
+					<div id = "owner_team_name_div">
+						<p>Team name:
 
-				<tr>
-					<td>First baseman:</td>
-					<td>
-						<select id="1B" name="1B" size=3>
-							{{#first_basemen}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/first_basemen}}
-						</select>
-					</td>
-				</tr>
+							<input type = "text" id = "team_name"\>
+						</p>
+					</div>
 
-				<tr>
-					<td>Second baseman:</td>
-					<td>
-						<select id="2B" name="2B" size=3>
-							{{#second_basemen}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/second_basemen}}
-						</select>
-					</td>
-				</tr>
+					<table id = "players" class = "table" border = 0>
 
-				<tr>
-					<td>Third baseman:</td>
-					<td>
-						<select id="3B" name="3B" size=3>
-							{{#third_basemen}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/third_basemen}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Catcher:</td>
+							<td>
+								<select id="C" size=5>
+									{{#catchers}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/catchers}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>Shortstop:</td>
-					<td>
-						<select id="SS" name="SS" size=3>
-							{{#shortstops}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/shortstops}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>First baseman:</td>
+							<td>
+								<select id="1B" name="1B" size=5>
+									{{#first_basemen}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/first_basemen}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>Outfield1:</td>
-					<td>
-						<select id="OF1" name="OF1" size=3>
-							{{#outfield}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/outfield}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Second baseman:</td>
+							<td>
+								<select id="2B" name="2B" size=5>
+									{{#second_basemen}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/second_basemen}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>Outfield2:</td>
-					<td>
-						<select id="OF2" name="OF2" size=3>
-							{{#outfield}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/outfield}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Third baseman:</td>
+							<td>
+								<select id="3B" name="3B" size=5>
+									{{#third_basemen}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/third_basemen}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>Outfield3:</td>
-					<td>
-						<select id="OF3" name="OF3" size=3>
-							{{#outfield}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/outfield}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Shortstop:</td>
+							<td>
+								<select id="SS" name="SS" size=5>
+									{{#shortstops}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/shortstops}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>SP1:</td>
-					<td>
-						<select id="SP1" name="SP1" size=3>
-							{{#SP}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/SP}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Outfield1:</td>
+							<td>
+								<select id="OF1" name="OF1" size=5>
+									{{#outfield}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/outfield}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>SP2:</td>
-					<td>
-						<select id="SP2" name="SP2" size=3>
-							{{#SP}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/SP}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Outfield2:</td>
+							<td>
+								<select id="OF2" name="OF2" size=5>
+									{{#outfield}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/outfield}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>SP3:</td>
-					<td>
-						<select id="SP3" name="SP3" size=3>
-							{{#SP}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/SP}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>Outfield3:</td>
+							<td>
+								<select id="OF3" name="OF3" size=5>
+									{{#outfield}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/outfield}}
+								</select>
+							</td>
+						</tr>
 
-				<tr>
-					<td>RP:</td>
-					<td>
-						<select id="RP" name="RP" size=3>
-							{{#RP}}
-								<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-							{{/RP}}
-						</select>
-					</td>
-				</tr>
+						<tr>
+							<td>SP1:</td>
+							<td>
+								<select id="SP1" name="SP1" size=5>
+									{{#SP}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/SP}}
+								</select>
+							</td>
+						</tr>
 
-			</table>
+						<tr>
+							<td>SP2:</td>
+							<td>
+								<select id="SP2" name="SP2" size=5>
+									{{#SP}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/SP}}
+								</select>
+							</td>
+						</tr>
 
-			<button id="submit_team" onclick="evaluate_team()" style="display: none">go</button>
+						<tr>
+							<td>SP3:</td>
+							<td>
+								<select id="SP3" name="SP3" size=5>
+									{{#SP}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/SP}}
+								</select>
+							</td>
+						</tr>
 
-			</div>
+						<tr>
+							<td>RP:</td>
+							<td>
+								<select id="RP" name="RP" size=5>
+									{{#RP}}
+										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+									{{/RP}}
+								</select>
+							</td>
+						</tr>
 
-			<div class="col-sm">
+					</table>
+
+					<button id="submit_team" onclick="evaluate_team()">go</button>
+
+				</div>
 
 			</div>
 
 		</div>
 
-	</main><!-- /.container -->
+		<div class="col-sm"></div>
+
+	</div>
+
+</main><!-- /.container -->
 
 </body>
 

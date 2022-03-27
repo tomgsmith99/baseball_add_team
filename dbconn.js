@@ -1,12 +1,11 @@
-require('dotenv').config()
 
-var mysql = require('mysql')
+const mysql = require('mysql')
 
 /**************************************/
 
 exports.mysql_conn = function() {
 
-	var con = mysql.createConnection({
+	const con = mysql.createConnection({
 		host: process.env.mysql_host,
 		user: process.env.mysql_user,
 		password: process.env.mysql_pwd,
