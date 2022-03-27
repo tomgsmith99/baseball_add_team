@@ -1,0 +1,62 @@
+[
+	{
+		"id": "C",
+		"display_name": "Catchers",
+		"pos": "C"
+	},
+	{
+		"id": "1B",
+		"display_name": "First Basemen",
+		"pos": "1B"
+	},
+	{
+		"id": "2B",
+		"display_name": "Second Basemen",
+		"pos": "2B"
+	},
+	{
+		"id": "3B",
+		"display_name": "Third Basemen",
+		"pos": "3B"
+	},
+	{
+		"id": "SS",
+		"display_name": "Shortstops",
+		"pos": "SS"
+	},
+	{
+		"id": "OF1",
+		"display_name": "OF1",
+		"pos": "OF"
+	},
+	{
+		"id": "OF2",
+		"display_name": "OF2",
+		"pos": "OF"
+	},
+	{
+		"id": "OF3",
+		"display_name": "OF3",
+		"pos": "OF"
+	},
+	{
+		"id": "SP1",
+		"display_name": "SP1",
+		"pos": "SP"
+	},
+	{
+		"id": "SP2",
+		"display_name": "SP2",
+		"pos": "SP"
+	},
+	{
+		"id": "SP3",
+		"display_name": "SP3",
+		"pos": "SP"
+	},
+	{
+		"id": "RP",
+		"display_name": "RP",
+		"pos": "RP"
+	}
+]

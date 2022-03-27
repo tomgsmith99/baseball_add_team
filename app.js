@@ -3,13 +3,13 @@ require('dotenv').config()
 
 const express = require('express')
 
-let mustacheExpress = require('mustache-express')
+const mustacheExpress = require('mustache-express')
 
 /*************************************************/
 
-var dbconn = require('./dbconn.js')
+const dbconn = require('./dbconn.js')
 
-var con = dbconn.mysql_conn()
+const con = dbconn.mysql_conn()
 
 /*************************************************/
 
@@ -32,6 +32,65 @@ app.listen(port, () => {
 })
 
 /*************************************************/
+// Get players
+
+let positions = require('./data/positions.json')
+
+let players_obj = {}
+
+let query = `SELECT id, LNF, pos, salary, team FROM player_pool_detail ORDER BY LNF`
+
+con.query(query, function (err, players) {
+	if (err) {
+		console.log(err)
+		return
+	}
+
+	for (i = 0; i < positions.length; i++) {
+
+		positions[i].players = []
+
+		for (player of players) {
+			if (player.pos == positions[i].pos) {
+
+				positions[i].players.push({
+					id: player.id,
+					lnf: player.LNF,
+					salary: player.salary,
+					team: player.team
+				})
+			}
+		}
+
+		for (player of players) {
+			players_obj[player.id] = {
+				team: player.team,
+				pos: player.pos,
+				salary: player.salary,
+				team: player.team
+			}
+		}
+	}
+})
+
+// Get owners
+
+let owners_arr = []
+
+query = `SELECT id, LNF, most_recent_team_name FROM owner_valid ORDER BY LNF`
+
+con.query(query, function (err, owners) {
+	if (err) {
+		console.log(err)
+		return
+	}
+
+	for (owner of owners) {
+		owners_arr.push(owner)
+	}
+})
+
+/*************************************************/
 
 app.get('/favicon.ico', (req, res) => {
 	res.sendStatus(200)
@@ -41,170 +100,32 @@ app.get('/', (req, res) => {
 
 	let obj = {
 		max_salary: process.env.max_salary,
-		season: process.env.season
+		season: process.env.season,
+		owners: owners_arr,
+		positions: positions
 	}
 
-	let query = `SELECT id, LNF, most_recent_team_name FROM owner_valid ORDER BY LNF`
-
-	con.query(query, function (err, owners) {
-		if (err) {
-			console.log(err)
-			res.json(err)
-			return
-		}
-
-		obj.owners = owners
-
-		const player_query = `SELECT id AS player_id, salary, team, LNF AS lnf FROM player_pool_detail WHERE pos='whichpos' AND season = ${process.env.season} ORDER BY lnf`
-
-		query = player_query.replace("whichpos", "C")
-
-		con.query(query, function (err, catchers) {
-			if (err) {
-				console.log(err)
-				res.json(err)
-				return
-			}
-
-			obj.catchers = catchers
-
-			query = player_query.replace("whichpos", "1B")
-
-			con.query(query, function (err, first_basemen) {
-				if (err) {
-					console.log(err)
-					res.json(err)
-					return
-				}
-
-				obj.first_basemen = first_basemen
-
-				query = player_query.replace("whichpos", "2B")
-
-				con.query(query, function (err, second_basemen) {
-					if (err) {
-						console.log(err)
-						res.json(err)
-						return
-					}
-
-					obj.second_basemen = second_basemen
-
-					query = player_query.replace("whichpos", "3B")
-
-					con.query(query, function (err, third_basemen) {
-						if (err) {
-							console.log(err)
-							res.json(err)
-							return
-						}
-
-						obj.third_basemen = third_basemen
-
-						query = player_query.replace("whichpos", "SS")
-
-						con.query(query, function (err, shortstops) {
-							if (err) {
-								console.log(err)
-								res.json(err)
-								return
-							}
-
-							obj.shortstops = shortstops
-
-							query = player_query.replace("whichpos", "OF")
-
-							con.query(query, function (err, outfield) {
-								if (err) {
-									console.log(err)
-									res.json(err)
-									return
-								}
-
-								obj.outfield = outfield
-
-								query = player_query.replace("whichpos", "SP")
-
-								con.query(query, function (err, SP) {
-									if (err) {
-										console.log(err)
-										res.json(err)
-										return
-									}
-
-									obj.SP = SP
-
-									query = player_query.replace("whichpos", "RP")
-
-									con.query(query, function (err, RP) {
-										if (err) {
-											console.log(err)
-											res.json(err)
-											return
-										}
-
-										obj.RP = RP
-
-										res.render ('index', obj)
-									})
-								})
-							})
-						})
-					})
-				})
-			})
-		})
-	})
+	res.render ('index', obj)
 })
 
 app.get('/data', (req, res) => {
 
-	let query = `SELECT id, LNF, most_recent_team_name FROM owner_valid ORDER BY LNF`
+	let owners_obj = {}
 
-	con.query(query, function (err, owners) {
-		if (err) {
-			console.log(err)
-			res.json(err)
-			return
+	for (owner of owners_arr) {
+		owners_obj[owner.id] = {
+			LNF: owner.LNF,
+			most_recent_team_name: owner.most_recent_team_name
 		}
+	}
 
-		let owners_obj = {}
+	const obj = {
+		owners: owners_obj,
+		players: players_obj
+	}
 
-		for (owner of owners) {
-			owners_obj[owner.id] = {
-				LNF: owner.LNF,
-				most_recent_team_name: owner.most_recent_team_name
-			}
-		}
+	res.json(obj)
 
-		query = `SELECT id, pos, salary, team FROM player_pool_detail ORDER BY LNF`
-
-		con.query(query, function (err, players) {
-			if (err) {
-				console.log(err)
-				res.json(err)
-				return
-			}
-
-			let players_obj = {}
-
-			for (player of players) {
-				players_obj[player.id] = {
-					team: player.team,
-					pos: player.pos,
-					salary: player.salary,
-					team: player.team
-				}
-			}
-
-			const obj = {
-				owners: owners_obj,
-				players: players_obj
-			}
-
-			res.json(obj)
-		})
-	})
 })
 
 app.post('/add_team', (req, res) => {
@@ -215,7 +136,7 @@ app.post('/add_team', (req, res) => {
 
 	const team_name_esc = con.escape(team_name)
 
-	let query = `INSERT INTO ownersXseasons SET owner_id = ${owner_id}, team_name = ${team_name_esc}, season = ${season}`
+	let query = `INSERT INTO ownersXseasons SET owner_id = ${owner_id}, team_name = ${team_name_esc}, season = ${season}, salary = ${salary}, bank = ${bank}`
 
 	con.query(query, function (err, data) {
 		if (err) {

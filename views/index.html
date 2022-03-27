@@ -154,7 +154,7 @@ function select_owner() {
 
 					<select id="owner_id" class="form-select" name="owner_id">
 						{{#owners}}
-							<option value="{{id}}">{{LNF}}</option>
+						<option value="{{id}}">{{LNF}}</option>
 						{{/owners}}
 					</select>
 
@@ -179,137 +179,18 @@ function select_owner() {
 
 					<table id = "players" class = "table" border = 0>
 
+						{{#positions}}
 						<tr>
-							<td>Catcher:</td>
+							<td>{{display_name}}:</td>
 							<td>
-								<select id="C" size=5>
-									{{#catchers}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/catchers}}
+								<select id="{{id}}" size=5>
+										{{#players}}
+										<option value="{{id}}">{{lnf}} - {{team}} - ${{salary}}</option>
+										{{/players}}
 								</select>
 							</td>
 						</tr>
-
-						<tr>
-							<td>First baseman:</td>
-							<td>
-								<select id="1B" name="1B" size=5>
-									{{#first_basemen}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/first_basemen}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>Second baseman:</td>
-							<td>
-								<select id="2B" name="2B" size=5>
-									{{#second_basemen}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/second_basemen}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>Third baseman:</td>
-							<td>
-								<select id="3B" name="3B" size=5>
-									{{#third_basemen}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/third_basemen}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>Shortstop:</td>
-							<td>
-								<select id="SS" name="SS" size=5>
-									{{#shortstops}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/shortstops}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>Outfield1:</td>
-							<td>
-								<select id="OF1" name="OF1" size=5>
-									{{#outfield}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/outfield}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>Outfield2:</td>
-							<td>
-								<select id="OF2" name="OF2" size=5>
-									{{#outfield}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/outfield}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>Outfield3:</td>
-							<td>
-								<select id="OF3" name="OF3" size=5>
-									{{#outfield}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/outfield}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>SP1:</td>
-							<td>
-								<select id="SP1" name="SP1" size=5>
-									{{#SP}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/SP}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>SP2:</td>
-							<td>
-								<select id="SP2" name="SP2" size=5>
-									{{#SP}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/SP}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>SP3:</td>
-							<td>
-								<select id="SP3" name="SP3" size=5>
-									{{#SP}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/SP}}
-								</select>
-							</td>
-						</tr>
-
-						<tr>
-							<td>RP:</td>
-							<td>
-								<select id="RP" name="RP" size=5>
-									{{#RP}}
-										<option value="{{player_id}}">{{lnf}} - {{team}} - ${{salary}}</option>
-									{{/RP}}
-								</select>
-							</td>
-						</tr>
+						{{/positions}}
 
 					</table>
 
